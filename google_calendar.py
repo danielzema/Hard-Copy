@@ -51,7 +51,7 @@ def get_upcoming_data(days=7):
         start = event['start'].get('dateTime', event['start'].get('date'))
         if 'T' in start:
             dt_obj = datetime.datetime.fromisoformat(start.replace('Z', '+00:00'))
-            date_str = dt_obj.strftime("%Y-%m-%d")
+            date_str = dt_obj.strftime("%d-%m-%Y")
             time_label = dt_obj.strftime("%H:%M")
         else:
             date_str = start
@@ -84,12 +84,12 @@ def get_upcoming_data(days=7):
 
             if due_raw:
                 dt_obj = datetime.datetime.fromisoformat(due_raw.replace('Z', '+00:00'))
-                date_str = dt_obj.strftime("%Y-%m-%d")
+                date_str = dt_obj.strftime("%d-%m-%Y")
                 
                 item = {
                     "title": title,
                     "description": desc,
-                    "due": f"{date_str} (Task)",
+                    "due": f"{date_str}",
                     "time_label": "[Task]",
                     "raw_date": date_str
                 }

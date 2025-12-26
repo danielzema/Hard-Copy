@@ -30,11 +30,11 @@ def shorten(text, limit):
     """Cuts text and adds '..' if too long."""
     if not text: return ""
     text = text.replace('\n', ' ') 
-    return (text[:limit-2] + '..') if len(text) > limit else text
+    return (text[:limit-3] + '...') if len(text) > limit else text
 
 def main():
-    print("\n   🖨️   PRINT-N-DO   ")
-    print("   Fetching your schedule...\n")
+    print("\n   🖨️   HARD-COPY    \n")
+    #print("   Fetching your schedule...\n")
     
     try:
         all_events = google_calendar.get_upcoming_data(7)
@@ -50,7 +50,7 @@ def main():
         # Build Date Menu
         for i in range(7):
             current_date = base + datetime.timedelta(days=i)
-            date_str = current_date.strftime("%Y-%m-%d")
+            date_str = current_date.strftime("%d-%m-%Y")
             nice_date = current_date.strftime("%a, %d %b")
             
             items = all_events.get(date_str, [])
@@ -77,7 +77,7 @@ def main():
         ).ask()
 
         if selected_date_str == "EXIT" or selected_date_str is None:
-            print("Bye! 👋")
+            print("Exiting. 👋")
             break
 
         # --- INNER LOOP: TASK SELECTION ---
@@ -104,10 +104,10 @@ def main():
                     is_task = e.get('type') == 'task' or e['time_label'] == '[Task]'
                     
                     if is_task:
-                        icon = "☑"
+                        icon = "√"
                         time_display = "Task"
                     else:
-                        icon = "🗓"
+                        icon = "•"
                         time_display = e['time_label']
 
                     title_short = shorten(e['title'], W_TITLE)
@@ -139,7 +139,7 @@ def main():
 
             # --- PREVIEW & PRINT ---
             print("\n" + "─"*50)
-            print(f" 🔎 PREVIEW RECEIPT")
+            print(f" 🔎 RECEIPT PREVIEW")
             print("─"*50)
             print(f" Title:  {selected_event['title']}")
             print(f" Time:   {selected_event['due']}")
