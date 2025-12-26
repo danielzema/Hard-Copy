@@ -4,12 +4,15 @@ import quotes
 MAX_WIDTH = 30
 MAX_TEXT_SPACE = MAX_WIDTH - 2 
 
+# String in parentheses makes this class inherit string behavior
 class BoldText(str):
     """Marker string subtype used to signal bold formatting."""
 
+# Function to create BoldText instances
 def bold(text: str) -> "BoldText":
     return BoldText(text)
 
+# Helper to unwrap text and determine bold status
 def _unwrap_text_and_flag(text, bold_flag: bool):
     is_bold = bold_flag or isinstance(text, BoldText)
     return str(text), is_bold
@@ -61,7 +64,6 @@ def format_reciept_header_quote():
     quote = quotes.get_random_quote()
     motivation_line, bold_quote = padded_text_middle(bold(quote))
     
-    # Day-Month-Year formatting for the printed receipt
     date_line = padded_text_left("Date: " + time.strftime("%d-%m-%Y"))[0]
     time_line = padded_text_left("Time: " + time.strftime("%H:%M"))[0]
     
