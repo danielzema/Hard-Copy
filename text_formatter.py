@@ -14,8 +14,6 @@ def _unwrap_text_and_flag(text, bold_flag: bool):
     is_bold = bold_flag or isinstance(text, BoldText)
     return str(text), is_bold
 
-# --- Border and Padding Helpers ---
-
 def top_bottom_border(): 
     return "+" + "-" * MAX_WIDTH + "+"
 
@@ -57,14 +55,14 @@ def wrap_text(text):
     if current_line: lines.append(current_line)
     return lines
 
-# --- Sections ---
-
 def format_reciept_header_quote():
     reciept, bold_reciept = padded_text_middle(bold("TASK RECEIPT"))
     line = padded_text_middle(len("TASK RECEIPT") * "-")[0]
     quote = quotes.get_random_quote()
     motivation_line, bold_quote = padded_text_middle(bold(quote))
-    date_line = padded_text_left("Date: " + time.strftime("%A, %d-%m-%Y"))[0]
+    
+    # Day-Month-Year formatting for the printed receipt
+    date_line = padded_text_left("Date: " + time.strftime("%d-%m-%Y"))[0]
     time_line = padded_text_left("Time: " + time.strftime("%H:%M"))[0]
     
     lines = [
@@ -88,38 +86,22 @@ def format_single_task_body(title: str, description: str, due_date: str):
     due_line = padded_text_left("Due: " + due_date)[0]
     
     lines = [task_line, sep, empty_line(), title_line, empty_line()]
-    
     if description:
         lines.append(padded_text_left(description)[0])
         lines.append(empty_line())
-        
     lines.append(due_line)
     lines.append(empty_line())
     return ("\n".join(lines), bold_word)
 
 def format_single_task_footer(): 
-    footer_line, bold_word = padded_text_left(bold("Completed: [ ]"))
-    lines = [
-        top_bottom_border(),
-        empty_line(),
-        footer_line,
-        empty_line(),
-        top_bottom_border(),
-    ]
+    footer_line, bold_word = padded_text_left(bold("Check when completed: [ ]"))
+    lines = [top_bottom_border(), empty_line(), footer_line, empty_line(), top_bottom_border()]
     return ("\n".join(lines), bold_word)
-
-# --- Full Receipt Unpacker ---
 
 def format_single_task_reciept(task_data):
     header_text, header_bolds = format_reciept_header_quote()
-    body_text, body_bold = format_single_task_body(
-        task_data['title'], 
-        task_data['description'], 
-        task_data['due']
-    )
+    body_text, body_bold = format_single_task_body(task_data['title'], task_data['description'], task_data['due'])
     footer_text, footer_bold = format_single_task_footer()
-    
     full_text = header_text + "\n" + body_text + "\n" + footer_text
-    
     all_bolds = header_bolds + ([body_bold] if body_bold else []) + ([footer_bold] if footer_bold else [])
     return (full_text, all_bolds)
