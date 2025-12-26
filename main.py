@@ -6,180 +6,96 @@ import google_calendar
 import text_formatter
 import printer_bluetooth
 
-# --- UI CONFIGURATION ---
-# Professional "Nord" Theme: Clean, minimal, and high contrast without being neon.
 custom_style = Style([
-    ('qmark', 'hidden'),              # Hides the default (?)
-    ('question', 'fg:#eceff4 bold'),  # Snow White for main headers
-    ('answer', 'fg:#88c0d0 bold'),    # Calm Blue for the selected answer
-    ('pointer', 'fg:#88c0d0 bold'),   # Calm Blue for the arrow
-    ('highlighted', 'fg:#88c0d0 bold'), # Blue highlight
-    ('selected', 'fg:#a3be8c'),       # Soft Green for checked items
-    ('separator', 'fg:#4c566a'),      # Dark Grey for lines
-    ('instruction', 'fg:#4c566a italic'), # Dark Grey for instructions
-    ('text', 'fg:#d8dee9'),           # Off-white standard text
+    ('qmark', 'hidden'),
+    ('question', 'fg:#eceff4 bold'),
+    ('answer', 'fg:#88c0d0 bold'),
+    ('pointer', 'fg:#88c0d0 bold'),
+    ('highlighted', 'fg:#88c0d0 bold'),
+    ('selected', 'fg:#a3be8c'),
+    ('separator', 'fg:#4c566a'),
+    ('instruction', 'fg:#4c566a italic'),
+    ('text', 'fg:#d8dee9'),
 ])
 
-# --- COLUMN WIDTHS ---
-W_ICON = 4
-W_TIME = 10
-W_TITLE = 35
-W_DESC = 25
+W_ICON, W_TITLE, W_DESC = 4, 30, 30
 
 def shorten(text, limit):
-    """Cuts text and adds '..' if too long."""
     if not text: return ""
     text = text.replace('\n', ' ') 
-    return (text[:limit-3] + '...') if len(text) > limit else text
+    return (text[:limit-2] + '..') if len(text) > limit else text
 
 def main():
-    print("\n   🖨️   HARD-COPY    \n")
-    #print("   Fetching your schedule...\n")
+    print("\n   🖨️   HARD COPY")
+    print("   Fetching tasks...\n")
     
     try:
-        all_events = google_calendar.get_upcoming_data(7)
+        all_tasks = google_calendar.get_upcoming_data(7)
     except Exception as e:
-        print(f"❌ Error fetching data: {e}")
+        print(f"❌ Error: {e}")
         return
 
-    # --- OUTER LOOP: DATE SELECTION (MAIN SCREEN) ---
     while True:
         base = datetime.date.today()
         date_options = []
-        
-        # Build Date Menu
         for i in range(7):
             current_date = base + datetime.timedelta(days=i)
-            date_str = current_date.strftime("%d-%m-%Y")
-            nice_date = current_date.strftime("%a, %d %b")
+            raw_key = current_date.strftime("%Y-%m-%d")
             
-            items = all_events.get(date_str, [])
-            count = len(items)
+            # Display Date in Day-Month-Year
+            nice_date = current_date.strftime("%d-%m-%Y")
+            day_name = current_date.strftime("%a")
             
-            if i == 0: day_label = "TODAY"
-            elif i == 1: day_label = "TOMORROW"
-            else: day_label = nice_date.upper()
-
-            # Format: "TODAY          (3 items)"
-            label = f"{day_label:<12} ({count} items)"
-            
-            date_options.append(questionary.Choice(title=label, value=date_str))
+            count = len(all_tasks.get(raw_key, []))
+            day_label = "Today" if i == 0 else ("Tomorrow" if i == 1 else f"{day_name} {nice_date}")
+            label = f"{day_label:<18} ({count} tasks)"
+            date_options.append(questionary.Choice(title=label, value=raw_key))
         
         date_options.append(questionary.Separator())
         date_options.append(questionary.Choice(title="❌  Exit", value="EXIT"))
 
-        selected_date_str = questionary.select(
-            "SELECT DATE:",
-            choices=date_options,
-            style=custom_style,
-            use_indicator=True,
-            pointer="»"
-        ).ask()
+        selected_date = questionary.select("SELECT DATE:", choices=date_options, style=custom_style, pointer="»").ask()
+        if selected_date in ["EXIT", None]: break
 
-        if selected_date_str == "EXIT" or selected_date_str is None:
-            print("Exiting. 👋")
-            break
-
-        # --- INNER LOOP: TASK SELECTION ---
         while True:
-            day_events = all_events.get(selected_date_str, [])
-            
+            day_tasks = all_tasks.get(selected_date, [])
             task_choices = []
             
-            if not day_events:
-                task_choices.append(questionary.Separator(line="   (No items for this day)"))
+            if not day_tasks:
+                task_choices.append(questionary.Separator(line="   (No tasks found)"))
             else:
-                header = (
-                    f"   {'TYPE':<{W_ICON}} "
-                    f"{'TIME':<{W_TIME}} "
-                    f"{'TITLE':<{W_TITLE}} "
-                    f"{'DESC'}"
-                )
-                underline = "   " + "─" * (W_ICON + W_TIME + W_TITLE + W_DESC)
-
+                header = f"   {'TYPE':<{W_ICON}} {'TITLE':<{W_TITLE}} {'DESC'}"
                 task_choices.append(questionary.Separator(line=header))
-                task_choices.append(questionary.Separator(line=underline))
+                task_choices.append(questionary.Separator(line="   " + "─" * (W_ICON + W_TITLE + W_DESC)))
                 
-                for e in day_events:
-                    is_task = e.get('type') == 'task' or e['time_label'] == '[Task]'
-                    
-                    if is_task:
-                        icon = "√"
-                        time_display = "Task"
-                    else:
-                        icon = "•"
-                        time_display = e['time_label']
-
-                    title_short = shorten(e['title'], W_TITLE)
-                    desc_short = shorten(e['description'], W_DESC)
-                    
-                    label = (
-                        f"{icon:<{W_ICON}} "
-                        f"{time_display:<{W_TIME}} "
-                        f"{title_short:<{W_TITLE}} "
-                        f"{desc_short}"
-                    )
-                    
-                    task_choices.append(questionary.Choice(title=label, value=e))
+                for t in day_tasks:
+                    label = f"    √   {shorten(t['title'], W_TITLE):<{W_TITLE}} {shorten(t['description'], W_DESC)}"
+                    task_choices.append(questionary.Choice(title=label, value=t))
             
-            task_choices.append(questionary.Separator(line=" ")) 
+            task_choices.append(questionary.Separator())
             task_choices.append(questionary.Choice(title="🔙  Go Back", value="BACK"))
 
-            selected_event = questionary.select(
-                "SELECT ITEM TO PREVIEW:",
-                choices=task_choices,
-                style=custom_style,
-                use_indicator=True,
-                pointer="»",
-                instruction="(Use arrow keys to navigate)" 
-            ).ask()
+            selected_task = questionary.select("SELECT TASK:", choices=task_choices, style=custom_style, pointer="»").ask()
+            if selected_task in ["BACK", None]: break
 
-            if selected_event == "BACK" or selected_event is None:
-                break # Go back to Date Menu
-
-            # --- PREVIEW & PRINT ---
-            print("\n" + "─"*50)
-            print(f" 🔎 RECEIPT PREVIEW")
-            print("─"*50)
-            print(f" Title:  {selected_event['title']}")
-            print(f" Time:   {selected_event['due']}")
-            
-            desc = selected_event.get('description', '')
-            if desc:
-                print(f" Desc:   {textwrap.fill(desc, width=50, initial_indent='', subsequent_indent='         ')}")
-            else:
-                print(f" Desc:   (None)")
+            # Preview Section
+            print("\n" + "─"*50 + f"\n 🔎 PREVIEW RECEIPT\n" + "─"*50)
+            print(f" Title:  {selected_task['title']}")
+            print(f" Due:    {selected_task['due']}") 
+            print(f" Desc:   {textwrap.fill(selected_task['description'] or '(None)', width=50, subsequent_indent='         ')}")
             print("─" * 50)
             
-            confirm = questionary.confirm(
-                "🖨️   Print this receipt?", 
-                default=True,
-                style=custom_style,
-                qmark="" 
-            ).ask()
-
-            if confirm:
-                print("Sending to printer...")
+            if questionary.confirm("🖨️  Print this task?", default=True, style=custom_style, qmark="").ask():
                 try:
-                    text, bold_words = text_formatter.format_single_task_reciept(selected_event)
-                    if bold_words:
-                        printer_bluetooth.print_text_with_bold(text, bold_words)
-                    else:
-                        printer_bluetooth.print_text(text)
+                    text, bold_words = text_formatter.format_single_task_reciept(selected_task)
+                    printer_bluetooth.print_text_with_bold(text, bold_words) if bold_words else printer_bluetooth.print_text(text)
                     print("✅ Printed successfully!\n")
-                    
-                    # --- LOGIC UPDATE ---
-                    # Break the inner loop to return to the Date Selection screen
-                    break 
-                    
+                    break
                 except Exception as e:
                     print(f"❌ Printer Error: {e}\n")
             else:
                 print("Cancelled.\n")
-                # Loop continues, staying on the Task Selection screen
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("\nExiting.")
+    try: main()
+    except KeyboardInterrupt: print("\nExiting.")
