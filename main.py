@@ -6,20 +6,23 @@ import google_calendar
 import text_formatter
 import printer_bluetooth
 
+# Custom style for questionary prompts
 custom_style = Style([
-    ('qmark', 'hidden'),
-    ('question', 'fg:#eceff4 bold'),
-    ('answer', 'fg:#88c0d0 bold'),
-    ('pointer', 'fg:#88c0d0 bold'),
-    ('highlighted', 'fg:#88c0d0 bold'),
-    ('selected', 'fg:#a3be8c'),
-    ('separator', 'fg:#4c566a'),
-    ('instruction', 'fg:#4c566a italic'),
-    ('text', 'fg:#d8dee9'),
+    ('qmark', 'hidden'), # Hide the question mark
+    ('question', 'fg:#eceff4 bold'), # question text
+    ('answer', 'fg:#88c0d0 bold'), # submitted answer text behind the question
+    ('pointer', 'fg:#88c0d0 bold'), # pointer used in select and checkbox prompts
+    ('highlighted', 'fg:#88c0d0 bold'), # pointed-at choice in select and checkbox prompts
+    ('selected', 'fg:#a3be8c'), # style for selected choices
+    ('separator', 'fg:#4c566a'), # separator lines
+    ('instruction', 'fg:#4c566a italic'), # instructions text
+    ('text', 'fg:#d8dee9'), # regular text
 ])
 
+# Column widths for display
 W_ICON, W_TITLE, W_DESC = 4, 30, 30
 
+# Function to shorten text with ellipsis
 def shorten(text, limit):
     if not text: return ""
     text = text.replace('\n', ' ') 
@@ -36,21 +39,25 @@ def main():
         return
 
     while True:
+        # Date Selection
         base = datetime.date.today()
+        # Generate date options for the next 7 days
         date_options = []
         for i in range(7):
             current_date = base + datetime.timedelta(days=i)
             raw_key = current_date.strftime("%Y-%m-%d")
             
-            # Display Date in Day-Month-Year
+            # Display Date in Day-Month-Year 
             nice_date = current_date.strftime("%d-%m-%Y")
             day_name = current_date.strftime("%a")
-            
+
+            # Count tasks for the current date
             count = len(all_tasks.get(raw_key, []))
             day_label = "Today" if i == 0 else ("Tomorrow" if i == 1 else f"{day_name} {nice_date}")
             label = f"{day_label:<18} ({count} tasks)"
             date_options.append(questionary.Choice(title=label, value=raw_key))
         
+        # Add exit option
         date_options.append(questionary.Separator())
         date_options.append(questionary.Choice(title="❌  Exit", value="EXIT"))
 
@@ -61,6 +68,7 @@ def main():
             day_tasks = all_tasks.get(selected_date, [])
             task_choices = []
             
+            # Task Selection
             if not day_tasks:
                 task_choices.append(questionary.Separator(line="   (No tasks found)"))
             else:
@@ -68,10 +76,12 @@ def main():
                 task_choices.append(questionary.Separator(line=header))
                 task_choices.append(questionary.Separator(line="   " + "─" * (W_ICON + W_TITLE + W_DESC)))
                 
+                # Populate tasks
                 for t in day_tasks:
                     label = f"    √   {shorten(t['title'], W_TITLE):<{W_TITLE}} {shorten(t['description'], W_DESC)}"
                     task_choices.append(questionary.Choice(title=label, value=t))
             
+            # Add go back option
             task_choices.append(questionary.Separator())
             task_choices.append(questionary.Choice(title="🔙  Go Back", value="BACK"))
 
