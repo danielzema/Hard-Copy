@@ -13,30 +13,28 @@ def get_credentials():
     creds = None
     if os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    # if there are no (valid) credentials available
     if not creds or not creds.valid:
+        # ask for new token if old
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
             creds = flow.run_local_server(port=0)
+        # w for writing to the file
         with open('token.json', 'w') as token:
             token.write(creds.to_json())
     return creds
 
 # Fetch upcoming tasks and group by date
 def get_upcoming_data(days=7):
-    """
-    :param days: Description: Number of days ahead to fetch tasks for. Default is 7.
-    :return: A dictionary where keys are dates (YYYY-MM-DD) and values are lists of tasks due on those dates.
-    Each task is represented as a dictionary with keys: 'title', 'description', 'due', and 'raw_date'.
-    """
     creds = get_credentials()
     tasks_service = build('tasks', 'v1', credentials=creds)
 
     # Calculate time range
     now = datetime.datetime.utcnow()
     end_time = now + datetime.timedelta(days=days)
-    # Convert to ISO 8601 format with 'Z' suffix for UTC time
+    # Convert to ISO 8601 format with 'Z' for UTC time
     # YYYY-MM-DDTHH:MM:SSZ
     iso_now = now.isoformat() + 'Z'
     iso_end = end_time.isoformat() + 'Z'
@@ -49,6 +47,7 @@ def get_upcoming_data(days=7):
 
     # If there is a primary task list, fetch tasks due in the specified range 
     if items:
+        # Only primary tasks needed, modify if needed
         tasklist_id = items[0]['id']
         tasks_result = tasks_service.tasks().list(
             tasklist=tasklist_id,
@@ -63,6 +62,7 @@ def get_upcoming_data(days=7):
             # if fields are missing, use defaults: 
             # None for description, 'No Title' for title
             title = task.get('title', 'No Title')
+            # flatten to one line
             desc = task.get('notes', '').replace('\n', ' ').strip()
             due_raw = task.get('due')
             
@@ -79,19 +79,25 @@ def get_upcoming_data(days=7):
                     time_val = dt_obj.strftime("%H:%M")
                     due_string = f"{date_str} ({time_val})"
                 else:
-                    due_string = date_str 
+                    due_string = date_str
 
-                # Create item data structure
-                item_data = {
-                    "title": title,
-                    "description": desc,
-                    "due": due_string,
-                    "raw_date": dt_obj.strftime("%Y-%m-%d") # Used for internal grouping
-                }
+                raw_date_key = dt_obj.strftime("%Y-%m-%d")
+            else: 
+                # Handle tasks with NO due date
+                due_string = "No Deadline"
+                raw_date_key = "Someday" 
 
-                # Group tasks by their raw date
-                if item_data["raw_date"] not in grouped_data: 
-                    grouped_data[item_data["raw_date"]] = []
-                grouped_data[item_data["raw_date"]].append(item_data)
+            # Create item data structure
+            item_data = {
+                "title": title,
+                "description": desc,
+                "due": due_string,
+                "raw_date": dt_obj.strftime("%Y-%m-%d") # Used for internal grouping
+            }
+
+            # Group tasks by their raw date
+            if item_data["raw_date"] not in grouped_data: 
+                grouped_data[item_data["raw_date"]] = []
+            grouped_data[item_data["raw_date"]].append(item_data)
 
     return grouped_data
