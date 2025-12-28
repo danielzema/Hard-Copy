@@ -20,13 +20,16 @@ custom_style = Style([
 ])
 
 # Column widths for display
-W_ICON, W_TITLE, W_DESC = 4, 30, 30
+W_ICON, W_TITLE, W_DESC = 4, 20, 30
 
-# Function to shorten text with ellipsis
+# function so that UI keeps columns
 def shorten(text, limit):
     if not text: return ""
-    text = text.replace('\n', ' ') 
-    return (text[:limit-2] + '..') if len(text) > limit else text
+    text = text.replace('\n', ' ')
+    # replace with two dots 
+    if len(text) > limit:
+        return(text[:limit-3] + '...')
+    else: return text  
 
 def main():
     print("\n   🖨️   HARD COPY")
