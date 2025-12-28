@@ -2,7 +2,12 @@
 
 Get things done by printing your To-Do-List as a physical receipt.
 
-(This project was made for personal use, but an installationguide is provided on the bottom of this page.)
+## Notes
+This project was first made for personal use in a private repository, but later copied to this public repository and modified for general use.
+
+An installationguide is provided on the bottom of this page.
+
+Hard-Copy 
 
 ## How it works:
 Hard Copy polls the Google Tasks API to retrieve your data and uses the Questionary library to provide an interactive, keyboard-driven menu system. Once you select a task, the app parses the data into a formatted receipt and transmits it via Bluetooth serial protocol or cable to a thermal ESC/POS printer that produces the receipt.
