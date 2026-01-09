@@ -17,8 +17,16 @@ def get_credentials():
     if not creds or not creds.valid:
         # ask for new token if old
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
+            try:
+                creds.refresh(Request())
+            except Exception as e:
+                # Token refresh failed (likely expired), remove and regenerate
+                print("   Outdated token: removing and generating a new one...")
+                os.remove('token.json')
+                creds = None
+        
+        # Generate new credentials if refresh failed or no valid creds exist
+        if not creds:
             flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
             creds = flow.run_local_server(port=0)
         # w for writing to the file
