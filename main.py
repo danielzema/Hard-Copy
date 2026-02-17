@@ -34,6 +34,11 @@ def shorten(text, limit):
 def main():
     print("\n   🖨️   HARD COPY")
     print("   Fetching tasks...\n")
+
+    # try:
+    #     print(f"   Printer device: {printer_bluetooth.get_configured_port()}")
+    # except Exception:
+    #     print("   Printer device: not detected yet (will retry when printing)")
     
     try:
         all_tasks = google_calendar.get_upcoming_data(7)
@@ -105,7 +110,8 @@ def main():
                     print("✅ Printed successfully!\n")
                     break
                 except Exception as e:
-                    print(f"❌ Printer Error: {e}\n")
+                    print(f"❌ Printer Error: {e}")
+                    print("   Tip: set HARD_COPY_PRINTER_PORT to your macOS device (e.g. /dev/cu.Bluetooth-Incoming-Port or /dev/cu.usbserial-XXXX).\n")
             else:
                 print("Cancelled.\n")
 

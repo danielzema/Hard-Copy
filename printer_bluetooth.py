@@ -1,11 +1,51 @@
-import serial          
+import glob
+import os
+import serial
 import time
-import text_formatter            
+import text_formatter
 
-SERIAL_PORT = "COM4" # <- change to Bluetooth port
+SERIAL_PORT = os.getenv("HARD_COPY_PRINTER_PORT")
+BAUD_RATE = int(os.getenv("HARD_COPY_PRINTER_BAUD", "9600"))
 
 ESC_BOLD_ON = b'\x1b\x45\x01'   # Enable bold
 ESC_BOLD_OFF = b'\x1b\x45\x00'  # Disable bold
+
+
+def list_serial_ports():
+    """Return likely serial device paths for Windows/macOS/Linux."""
+    if os.name == "nt":
+        return [f"COM{i}" for i in range(1, 257)]
+
+    device_paths = sorted(set(glob.glob("/dev/cu.*") + glob.glob("/dev/tty.*")))
+    preferred = []
+    fallback = []
+
+    for path in device_paths:
+        lower_path = path.lower()
+        if any(token in lower_path for token in ["bluetooth", "usbserial", "usbmodem", "serial", "uart"]):
+            preferred.append(path)
+        else:
+            fallback.append(path)
+
+    return preferred + fallback
+
+
+def _resolve_serial_port():
+    if SERIAL_PORT:
+        return SERIAL_PORT
+
+    ports = list_serial_ports()
+    if not ports:
+        raise RuntimeError(
+            "No serial printer device found. Pair/connect your printer first, then set HARD_COPY_PRINTER_PORT."
+        )
+
+    return ports[0]
+
+
+def get_configured_port():
+    """Return the selected serial port path."""
+    return _resolve_serial_port()
 
 def send_to_printer(data: bytes):
     # Open the serial connection to the printer.
@@ -13,9 +53,9 @@ def send_to_printer(data: bytes):
 
     # Create object
     with serial.Serial(
-        SERIAL_PORT,     
+        _resolve_serial_port(),
         # Speed
-        baudrate=9600,
+        baudrate=BAUD_RATE,
         # Data size
         bytesize=8,      
         # No parity bits needed?

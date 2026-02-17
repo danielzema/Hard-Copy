@@ -73,6 +73,21 @@ Go to Credentials → Create Credentials → OAuth 2.0 Client IDs (Select "Deskt
 
 Download the JSON file, rename it to credentials.json, and place it in the root folder of this project.
 
+Alternative (no rename needed):
+
+```bash
+HARD_COPY_CREDENTIALS_PATH=/full/path/to/client_secret_xxx.json python main.py
+```
+
+The app can also auto-import the newest `client_secret*.json` from `~/Downloads` on first run.
+
+If browser popup does not open on macOS, the app now falls back to terminal auth and prints a login URL + code prompt.
+You can force this mode with:
+
+```bash
+HARD_COPY_OAUTH_NO_BROWSER=1 python main.py
+```
+
 ### 4. Printer Configuration
 Pair your ESC/POS thermal printer via Bluetooth.
 
